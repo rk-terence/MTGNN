@@ -65,7 +65,7 @@ class mixprop(nn.Module):
     def forward(self,x,adj):
         adj = adj + torch.eye(adj.size(0)).to(x.device)
         d = adj.sum(1)
-        h = x
+        h = x  # [batch, channels, nodes, time_length]
         out = [h]
         a = adj / d.view(-1, 1)
         for i in range(self.gdep):

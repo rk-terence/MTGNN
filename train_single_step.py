@@ -56,14 +56,16 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
 
 
 def train(data, X, Y, model, criterion, optim, batch_size):
+    # X: [n, P, m]
+    # Y: [n, m]
     model.train()
     total_loss = 0
     n_samples = 0
     iter = 0
     for X, Y in data.get_batches(X, Y, batch_size, True):
         model.zero_grad()
-        X = torch.unsqueeze(X,dim=1)
-        X = X.transpose(2,3)
+        X = torch.unsqueeze(X,dim=1)  # [batch, 1, P, m]
+        X = X.transpose(2,3)  # [batch, 1, m, P]
         if iter % args.step_size == 0:
             perm = np.random.permutation(range(args.num_nodes))
         num_sub = int(args.num_nodes / args.num_split)

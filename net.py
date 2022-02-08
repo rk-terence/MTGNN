@@ -2,7 +2,11 @@ from layer import *
 
 
 class gtnet(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, in_dim=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True):
+    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, 
+                 predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20,
+                 node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, 
+                 skip_channels=64, end_channels=128, seq_length=12, in_dim=2, out_dim=12, layers=3, 
+                 propalpha=0.05, tanhalpha=3, layer_norm_affline=True):
         super(gtnet, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
@@ -42,9 +46,7 @@ class gtnet(nn.Module):
 
                 self.filter_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation))
                 self.gate_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation))
-                self.residual_convs.append(nn.Conv2d(in_channels=conv_channels,
-                                                    out_channels=residual_channels,
-                                                 kernel_size=(1, 1)))
+                self.residual_convs.append(nn.Conv2d(in_channels=conv_channels, out_channels=residual_channels, kernel_size=(1, 1)))
                 if self.seq_length>self.receptive_field:
                     self.skip_convs.append(nn.Conv2d(in_channels=conv_channels,
                                                     out_channels=skip_channels,
@@ -87,14 +89,19 @@ class gtnet(nn.Module):
 
 
     def forward(self, input, idx=None):
+        """
+        input: [batch, 1, m, P] for traffic dataset, 
+        where m is the number of nodes (features) in this dataset
+        """
         seq_len = input.size(3)
         assert seq_len==self.seq_length, 'input sequence length not equal to preset sequence length'
 
-        if self.seq_length<self.receptive_field:
+        if self.seq_length < self.receptive_field:
             input = nn.functional.pad(input,(self.receptive_field-self.seq_length,0,0,0))
 
 
 
+        # get the adj matrix A
         if self.gcn_true:
             if self.buildA_true:
                 if idx is None:
@@ -104,8 +111,8 @@ class gtnet(nn.Module):
             else:
                 adp = self.predefined_A
 
-        x = self.start_conv(input)
-        skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
+        x = self.start_conv(input)  # [batch, residual_channels, m, P]
+        skip = self.skip0(F.dropout(input, self.dropout, training=self.training))  # [batch, skip_channels, m, 1]
         for i in range(self.layers):
             residual = x
             filter = self.filter_convs[i](x)

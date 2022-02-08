@@ -17,11 +17,15 @@ class DataLoaderS(object):
         fin = open(file_name)
         self.rawdat = np.loadtxt(fin, delimiter=',')
         self.dat = np.zeros(self.rawdat.shape)
-        self.n, self.m = self.dat.shape
+        self.n, self.m = self.dat.shape  # the raw data has shape [n', m]
         self.normalize = 2
         self.scale = np.ones(self.m)
         self._normalized(normalize)
         self._split(int(train * self.n), int((train + valid) * self.n), self.n)
+
+        # After _split, train/valid/test is a list with 2 elements, 
+        # each of them has 
+        # shape [n, P, m], shape [n, m]
 
         self.scale = torch.from_numpy(self.scale).float()
         tmp = self.test[1] * self.scale.expand(self.test[1].size(0), self.m)
@@ -43,7 +47,7 @@ class DataLoaderS(object):
         if (normalize == 1):
             self.dat = self.rawdat / np.max(self.rawdat)
 
-        # normlized by the maximum value of each row(sensor).
+        # normalized by the maximum value of each column (sensor).
         if (normalize == 2):
             for i in range(self.m):
                 self.scale[i] = np.max(np.abs(self.rawdat[:, i]))
